@@ -7,9 +7,22 @@
 #include "ResourceManager.h"
 
 
+enum class FileLoadType {
+    Unknown, Model, EnvMap
+};
+
+
 class Window {
 public:
-    Window() : width(0), height(0), window(nullptr), current_model(nullptr), selected(manager.end()) {  }
+    Window() : 
+        width(0), 
+        height(0), 
+        window(nullptr), 
+        selected(manager.end()), 
+        last_instant(0.0f), 
+        delta_time(0.0f),
+        cursor_state(-1.0f, -1.0f),
+        file_load_type(FileLoadType::Unknown) {  }
 
     ~Window();
 
@@ -27,7 +40,12 @@ public:
 
     void swap_buffers();
 
-    void render_model_using_shader(ModelPtr model, ShaderPtr shader);
+    void render_using_shader(Resource model, ShaderPtr shader, CameraPtr camera);
+
+    void render_opengl_status();
+
+    // update camera (if present)
+    void update_camera();
 
     // UI functions
     void render_main_menu_bar();
@@ -44,10 +62,20 @@ private:
 
     // resources
     ResourceManager manager;
-    ModelPtr current_model;
+
+    ResourcePtr current_model;
     ShaderPtr current_shader;
+    CameraPtr current_camera;
+    EnvMapPtr current_envmap;
+
     ResourcePtr selected;
 
     // UI system
     std::string file_dialog_chosen_path;
+    FileLoadType file_load_type;
+
+    // chrono
+    float last_instant;
+    float delta_time;
+    glm::vec2 cursor_state;
 };

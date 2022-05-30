@@ -63,6 +63,15 @@
     <ClCompile Include="Shader.cpp">
       <Filter>源文件\resources</Filter>
     </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>源文件\resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>源文件\resources</Filter>
+    </ClCompile>
+    <ClCompile Include="EnvMap.cpp">
+      <Filter>源文件\resources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -75,6 +84,15 @@
       <Filter>源文件\resources</Filter>
     </ClInclude>
     <ClInclude Include="Shader.h">
+      <Filter>源文件\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>源文件\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>源文件\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="EnvMap.h">
       <Filter>源文件\resources</Filter>
     </ClInclude>
   </ItemGroup>

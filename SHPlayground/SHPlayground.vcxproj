@@ -104,14 +104,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;USE_BOOKMARK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>F:\libraries\imgui_file_dialog-0.6.4;F:\libraries\imgui-1.87\backends;F:\libraries\imgui-1.87;C:\Users\42yea\libraries\glad\include;F:\libraries\glfw-3.3.7\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>F:\libraries\tinyexr\deps\miniz;F:\libraries\tinyexr;F:\libraries\assimp-5.2.4\include;C:\Users\42yea\libraries\glm\;F:\libraries\imgui_file_dialog-0.6.4;F:\libraries\imgui-1.87\backends;F:\libraries\imgui-1.87;C:\Users\42yea\libraries\glad\include;F:\libraries\glfw-3.3.7\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>F:\libraries\glfw-3.3.7\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\libraries\tinyexr\lib\Debug;F:\libraries\assimp-5.2.4\lib\Debug;F:\libraries\glfw-3.3.7\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;assimp-vc143-mtd.lib;miniz.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -139,16 +139,22 @@
     <ClCompile Include="..\..\..\libraries\imgui-1.87\imgui_tables.cpp" />
     <ClCompile Include="..\..\..\libraries\imgui-1.87\imgui_widgets.cpp" />
     <ClCompile Include="..\..\..\libraries\imgui_file_dialog-0.6.4\ImGuiFileDialog.cpp" />
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="EnvMap.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="EnvMap.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ResourceManager.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
