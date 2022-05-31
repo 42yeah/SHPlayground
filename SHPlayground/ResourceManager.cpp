@@ -82,3 +82,14 @@ ResourcePtr ResourceManager::scene(std::string alias) {
     }
     return resources.find(alias);
 }
+
+ResourcePtr ResourceManager::sh_sampler(std::string alias) {
+    return resources.find(alias);
+}
+
+ResourcePtr ResourceManager::sh_sampler(std::string alias, int num_bands) {
+    if (resources.find(alias) == resources.end()) {
+        resources[alias] = std::make_shared<SHSampler>(num_bands);
+    }
+    return resources.find(alias);
+}

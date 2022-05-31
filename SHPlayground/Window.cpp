@@ -48,17 +48,6 @@ Window::Window(int width, int height, std::string title) : width(width), height(
     cursor_state = glm::vec2(-1.0f, -1.0f);
 }
 
-Window::Window(Window &&window) noexcept {
-    this->window = window.window;
-    width = window.width;
-    height = window.height;
-    last_instant = window.last_instant;
-    delta_time = window.delta_time;
-    cursor_state = window.cursor_state;
-    file_load_type = FileLoadType::Unknown;
-    window.window = nullptr;
-}
-
 bool Window::should_close() {
     return glfwWindowShouldClose(window);
 }
@@ -226,9 +215,26 @@ void Window::render_main_menu_bar() {
                 file_load_type = FileLoadType::Model;
                 ImGuiFileDialog::Instance()->OpenDialog("choose", "Choose .obj file", ".dae,.obj", "F:\\code\\Scotty3D\\media\\");
             }
+            
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Edit")) {
             if (ImGui::MenuItem("Load EnvMap")) {
                 file_load_type = FileLoadType::EnvMap;
                 ImGuiFileDialog::Instance()->OpenDialog("choose", "Choose .exr file", ".exr", "F:\\academia\\exr\\");
+            }
+            if (ImGui::MenuItem("Create SH sample")) {
+                // I am too lazy; just create one
+                
+                if (manager.sh_sampler("SH sampler") == manager.end()) {
+                    manager.sh_sampler("SH sampler", 0);
+                } else {
+                    int i = 1;
+                    while (manager.sh_sampler("SH sampler " + std::to_string(i)) != manager.end()) {
+                        i++;
+                    }
+                    manager.sh_sampler("SH sampler " + std::to_string(i), 0);
+                }
             }
             ImGui::EndMenu();
         }
@@ -283,22 +289,25 @@ void Window::render_resources() {
                 std::string str = "";
                 std::visit(overloaded {
                     [&](TexturePtr t) {
-                        str = "[T] " + it->first;
+                        str = "[T]  " + it->first;
                     },
                     [&](ShaderPtr s) {
-                        str = "[S] " + it->first;
+                        str = "[S]  " + it->first;
                     },
                     [&](ModelPtr m) {
-                        str = "[M] " + it->first;
+                        str = "[M]  " + it->first;
                     },
                     [&](CameraPtr c) {
-                        str = "[C] " + it->first;
+                        str = "[C]  " + it->first;
                     },
                     [&](ScenePtr s) {
-                        str = "[*] " + it->first;
+                        str = "[Sc] " + it->first;
                     },
                     [&](EnvMapPtr e) {
-                        str = "[E] " + it->first;
+                        str = "[E]  " + it->first;
+                    },
+                    [&](SHSamplerPtr s) {
+                        str = "[SH] " + it->first;
                     }
                 }, second);
 
@@ -455,7 +464,73 @@ void Window::render_selected_properties() {
 
                 glm::vec4 color = e->operator()(sample.x, sample.y);
                 ImGui::ColorEdit4("sample color", (float *) &color);
-                ImGui::Image((void *) e->texture, ImVec2(e->size().x, e->size().y));
+                
+                float aspect = e->size().x / e->size().y;
+                float w = ImGui::GetWindowWidth();
+                ImGui::Image((void *) e->texture, ImVec2(w, w / aspect));
+            },
+            [&](SHSamplerPtr s) {
+                static int num_bands = 4, size_width = 128, size_height = 128;
+                static int l = 0, m = 0;
+                ImGui::Text("[SHSAMPLER] %s", selected->first.c_str());
+                ImGui::Separator();
+                ImGui::Text("PROPERTIES");
+                ImGui::Text("size: (%d, %d)", s->size().x, s->size().y);
+                ImGui::Text("#bands: %d", s->num_bands());
+                ImGui::Separator();
+                ImGui::Text("RECONFIGURE");
+                ImGui::InputInt("new band level", &num_bands);
+
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                ImGui::BeginTable("##resize_sh", 2);
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                ImGui::InputInt("##width", &size_width);
+                ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                ImGui::InputInt("##height", &size_height);
+                ImGui::EndTable();
+                if (ImGui::Button("Reconfigure")) {
+                    s->resize(glm::ivec2(size_width, size_height), num_bands);
+                    s->visualize();
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Calculate SH")) {
+                    s->sample_sh();
+                    s->visualize();
+                }
+                if (current_envmap && ImGui::Button("Calculate envlight coefficients")) {
+                    s->calc_coefficients(*current_envmap);
+                }
+
+                if (s->coefficients().size() > 0 && s->textures()) {
+                    if (ImGui::Button("Reconstruct")) {
+                        s->reconstruct();
+                    }
+                    for (int l = 0; l < s->num_bands(); l++) {
+                        for (int m = -l; m <= l; m++) {
+                            int index = l * (l + 1) + m;
+                            glm::vec3 coeff = s->coefficients()[index] * 0.5f + 0.5f;
+
+                            ImGui::ColorEdit3((std::string("coefficient ") + std::to_string(index)).c_str(), &coeff[0]);
+                        }
+                    }
+                }
+                if (s->reconstructed() > 0) {
+                    ImGui::Text("Reconstructed");
+                    ImGui::Image((void *) s->reconstructed(), ImVec2(s->size().x, s->size().y));
+                }
+                if (s->textures()) {
+                    ImGui::SliderInt("l", &l, 0, s->num_bands() - 1);
+                    ImGui::SliderInt("m", &m, -l, l);
+                    l = glm::min<int>(l, s->num_bands() - 1);
+                    m = glm::clamp<int>(m, -l, l);
+                    int index = l * (l + 1) + m;
+                    ImGui::Text("Index: %d", index);
+                    ImGui::Text("OpenGL texture ID: %u", s->textures()[index]);
+                    ImGui::Image((void *) s->textures()[index], ImVec2(s->size().x, s->size().y));
+                }
             },
             [&](auto h) {
                 ImGui::Text("[UNKNOWN] %s", selected->first.c_str());

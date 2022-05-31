@@ -19,6 +19,9 @@
     <Filter Include="源文件\resources">
       <UniqueIdentifier>{0bcecec6-15e9-47af-b35c-f1f3112d618b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\cuda">
+      <UniqueIdentifier>{2cb894a4-16ee-45c2-9e89-183883add498}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -95,5 +98,22 @@
     <ClInclude Include="EnvMap.h">
       <Filter>源文件\resources</Filter>
     </ClInclude>
+    <ClInclude Include="SHSampler.cuh">
+      <Filter>源文件\resources</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="CudaPtr.cuh">
+      <Filter>源文件\cuda</Filter>
+    </CudaCompile>
+    <CudaCompile Include="algorithms.cu">
+      <Filter>源文件\cuda</Filter>
+    </CudaCompile>
+    <CudaCompile Include="algorithms.cuh">
+      <Filter>源文件\cuda</Filter>
+    </CudaCompile>
+    <CudaCompile Include="SHSampler.cu">
+      <Filter>源文件\resources</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

@@ -14,23 +14,13 @@ enum class FileLoadType {
 
 class Window {
 public:
-    Window() : 
-        width(0), 
-        height(0), 
-        window(nullptr), 
-        selected(manager.end()), 
-        last_instant(0.0f), 
-        delta_time(0.0f),
-        cursor_state(-1.0f, -1.0f),
-        file_load_type(FileLoadType::Unknown) {  }
-
     ~Window();
 
     Window(int width, int height, std::string title);
 
     Window(const Window &) = delete; // no copy constructor
 
-    Window(Window &&window) noexcept;
+    Window(Window &&window) noexcept = delete;
 
     bool should_close();
 

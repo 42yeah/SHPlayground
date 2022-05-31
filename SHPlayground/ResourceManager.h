@@ -10,6 +10,7 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "EnvMap.h"
+#include "SHSampler.cuh"
 
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -26,6 +27,7 @@ using ShaderPtr = std::shared_ptr<Shader>;
 using CameraPtr = std::shared_ptr<Camera>;
 using ScenePtr = std::shared_ptr<Scene>;
 using EnvMapPtr = std::shared_ptr<EnvMap>;
+using SHSamplerPtr = std::shared_ptr<SHSampler>;
 
 using Resource = std::variant<
     ModelPtr, 
@@ -33,7 +35,8 @@ using Resource = std::variant<
     ShaderPtr,
     CameraPtr,
     ScenePtr,
-    EnvMapPtr>;
+    EnvMapPtr,
+    SHSamplerPtr>;
 
 using ResourcePtr = std::map<std::string, Resource>::iterator;
 
@@ -71,6 +74,10 @@ public:
     ResourcePtr scene(std::string alias, std::string path);
 
     ResourcePtr scene(std::string alias);
+
+    ResourcePtr sh_sampler(std::string alias);
+
+    ResourcePtr sh_sampler(std::string alias, int num_bands);
 
 
     ResourcePtr begin() {

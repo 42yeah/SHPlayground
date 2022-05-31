@@ -6,6 +6,7 @@
 
 
 class Window;
+class SHSampler;
 
 class EnvMap {
 public:
@@ -29,5 +30,6 @@ private:
     GLuint texture;
 
     friend class Window;
+    friend class SHSampler;
 };
 
