@@ -1,4 +1,5 @@
 #include "SHSampler.cuh"
+#include <fstream>
 #include "CudaPtr.cuh"
 #include "algorithms.cuh"
 
@@ -130,9 +131,6 @@ void SHSampler::reconstruct() {
         }
     }
 
-    cudaError_t err = cudaGetLastError();
-    std::cout << cudaGetErrorString(err) << std::endl;
-
     {
         CudaPtr<glm::vec3> texture_cuda(texture, _size.x * _size.y);
 
@@ -157,8 +155,151 @@ void SHSampler::reconstruct() {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _size.x, _size.y, 0, GL_RGB, GL_FLOAT, &texture[0]);
     glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
-    err = cudaGetLastError();
+    cudaError_t err = cudaGetLastError();
     std::cout << cudaGetErrorString(err) << std::endl;
 
     delete[] texture;
+}
+
+void SHSampler::evaluate_scene_coeffs(std::shared_ptr<Scene> scene) {
+    // just need to evaluate all models in scenes once
+    std::vector<std::shared_ptr<Model> > unique_models;
+
+    for (auto it = scene->begin(); it != scene->end(); it++) {
+        if (std::find(unique_models.begin(), unique_models.end(), it->model) == unique_models.end()) {
+            unique_models.push_back(it->model);
+        }
+    }
+
+    for (auto it = unique_models.begin(); it != unique_models.end(); it++) {
+        evaluate_model_coeffs(*it);
+    }
+}
+
+void SHSampler::evaluate_model_coeffs(std::shared_ptr<Model> model) {
+    if (!model->has_underlying_data() || !model->valid) {
+        return;
+    }
+    const std::vector<Vertex> &vertices = model->get_vertices();
+
+    // perform SH projection
+    std::vector<glm::vec3> vertices_coeffs;
+    // _coefficients.size() for EACH vertex
+    vertices_coeffs.resize(_coefficients.size() * vertices.size());
+    
+    std::vector<glm::vec3> result_vertical;
+    result_vertical.resize(_size.y);
+
+    // for each SH function...
+    for (int i = 0; i < _coefficients.size(); i++) {
+
+        CudaPtr<glm::vec3> sh(buffer[i], _size.x * _size.y);
+
+        // for each vertex...
+        for (int j = 0; j < vertices.size(); j++) {
+            // get the resulting vector...
+            glm::vec3 &result = vertices_coeffs[j * _coefficients.size() + i];
+            result = glm::vec3(0.0f);
+
+            // zero out vertical results...
+            for (int k = 0; k < result_vertical.size(); k++) {
+                result_vertical[k] = glm::vec3(0.0f);
+            }
+
+            {
+                CudaPtr<glm::vec3> result_vertical_cuda(&result_vertical[0], _size.y);
+
+                // perform SH projection...
+                cuda::vertex_sh_project<<<1, _size.y>>>(sh(), vertices[j], _size, result_vertical_cuda());
+            }
+
+            // sum up the result...
+            for (int k = 0; k < result_vertical.size(); k++) {
+                result += result_vertical[k];
+            }
+            result /= _size.y;
+            result *= 4.0f * glm::pi<float>();
+        }
+
+    }
+
+    // for now, all three channels are the same - we are just going to take the first
+
+    cudaError_t err = cudaGetLastError();
+    std::cout << cudaGetErrorString(err) << std::endl;
+
+    // reset model VAO and VBO
+    glDeleteVertexArrays(1, &model->vao);
+    glDeleteBuffers(1, &model->vbo);
+
+    std::vector<float> vertex_data;
+    
+    // number of floats: vertices(3) + normals(3) + texCoords(2) + coeffs(n)
+    constexpr int offset = 3 + 3 + 2;
+    int n = _coefficients.size();
+    vertex_data.resize(vertices.size() * (offset + n));
+
+    for (int i = 0; i < vertices.size(); i++) {
+        std::memcpy(&vertex_data[i * (offset + n)], &vertices[i], sizeof(Vertex));
+
+        for (int j = 0; j < n; j++) {
+            vertex_data[i * (offset + n) + offset + j] = vertices_coeffs[i * n + j].x;
+        }
+    }
+
+    glGenVertexArrays(1, &model->vao);
+    std::cout << glGetError() << std::endl;
+    glGenBuffers(1, &model->vbo);
+    std::cout << glGetError() << std::endl;
+    glBindVertexArray(model->vao);
+    std::cout << glGetError() << std::endl;
+    glBindBuffer(GL_ARRAY_BUFFER, model->vbo);
+    std::cout << glGetError() << std::endl;
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertex_data.size(), &vertex_data[0], GL_STATIC_DRAW);
+    std::cout << glGetError() << std::endl;
+    glEnableVertexAttribArray(0);
+    std::cout << glGetError() << std::endl;
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), nullptr);
+    std::cout << glGetError() << std::endl;
+    glEnableVertexAttribArray(1);
+    std::cout << glGetError() << std::endl;
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), (void *) (sizeof(float) * 3));
+    std::cout << glGetError() << std::endl;
+    glEnableVertexAttribArray(2);
+    std::cout << glGetError() << std::endl;
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), (void *) (sizeof(float) * 6));
+    std::cout << glGetError() << std::endl;
+    glEnableVertexAttribArray(3);
+    std::cout << glGetError() << std::endl;
+    glVertexAttribPointer(3, n / 4, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), (void *) (sizeof(float) * 8));
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, n / 4, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), (void *) (sizeof(float) * 12));
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, n / 4, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), (void *) (sizeof(float) * 16));
+    glEnableVertexAttribArray(6);
+    glVertexAttribPointer(6, n / 4, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), (void *) (sizeof(float) * 20));
+
+    std::cout << glGetError() << std::endl;
+    glBindVertexArray(GL_NONE);
+    std::cout << glGetError() << std::endl;
+
+    if (std::strlen(vertex_coeff_export_path) > 0) {
+        std::ofstream writer(vertex_coeff_export_path);
+        if (!writer.good()) {
+            std::cerr << "WARNING! Cannot export CSV: bad writer." << std::endl;
+            return;
+        }
+
+        // ;-separated CSV
+        writer << "x;y;z;nx;ny;nz;tu;tv;0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15" << std::endl;
+        for (int i = 0; i < vertices.size(); i++) {
+            const Vertex &v = vertices[i];
+            writer << v.position.x << ";" << v.position.y << ";" << v.position.z << ";" << v.normal.x << ";" << v.normal.y << ";" << v.normal.z << ";" << v.tex_coord.x << ";" << v.tex_coord.y;
+            for (int j = 0; j < n; j++) {
+                writer << ";" << vertices_coeffs[i * n + j].x;
+            }
+            writer << std::endl;
+        }
+        writer.close();
+    }
 }

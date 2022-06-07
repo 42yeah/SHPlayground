@@ -3,16 +3,12 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <vector>
+#include "Vertex.h"
 
 
 class Window;
 
-
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec2 tex_coord;
-};
 
 struct BBox {
     BBox() : min(FLT_MAX, FLT_MAX, FLT_MAX), max(-FLT_MAX, -FLT_MAX, -FLT_MAX) {  }
@@ -29,7 +25,7 @@ struct BBox {
 
 class Model {
 public:
-    Model() : valid(false), vao(0), vbo(0), num_vertices(0), has_underlying_data(false), centroid(0.0f) {  }
+    Model() : valid(false), vao(0), vbo(0), num_vertices(0), _has_underlying_data(false), centroid(0.0f) {  }
 
     Model(const Model &) = delete;
 
@@ -51,6 +47,14 @@ public:
         return centroid;
     }
 
+    inline bool has_underlying_data() const {
+        return _has_underlying_data;
+    }
+
+    const inline std::vector<Vertex> &get_vertices() const {
+        return vertices;
+    }
+
     BBox bbox;
 
 private:
@@ -61,7 +65,9 @@ private:
 
     // has_underlying_data dictates whether the model has primitive data or not (fully inside GPU),
     // so that the model can be reconstructed again if needed.
-    bool has_underlying_data;
+    bool _has_underlying_data;
+    std::vector<Vertex> vertices;
 
     friend class Window;
+    friend class SHSampler;
 };

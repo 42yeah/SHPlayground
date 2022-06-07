@@ -41,7 +41,7 @@ Shader::Shader(std::string vertex_path, std::string fragment_path) : vertex_shad
     glGetProgramiv(program, GL_LINK_STATUS, &link_status);
     if (link_status == GL_FALSE) {
         char log[512] = { 0 };
-        glGetShaderInfoLog(program, sizeof(log), nullptr, log);
+        glGetProgramInfoLog(program, sizeof(log), nullptr, log);
         std::cerr << "FATAL! Failed to link program: " << log << std::endl;
         // just throw
         throw "FATAL! Failed to link program.";

@@ -101,6 +101,9 @@
     <ClInclude Include="SHSampler.cuh">
       <Filter>源文件\resources</Filter>
     </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>源文件\resources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="CudaPtr.cuh">

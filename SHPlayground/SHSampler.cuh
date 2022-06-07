@@ -5,6 +5,8 @@
 #include <glad/glad.h>
 #include <vector>
 #include "EnvMap.h"
+#include "Scene.h"
+#include "Model.h"
 
 
 class SHSampler {
@@ -61,9 +63,15 @@ public:
 
     void reconstruct();
 
+    void evaluate_scene_coeffs(std::shared_ptr<Scene> scene);
+
+    void evaluate_model_coeffs(std::shared_ptr<Model> model);
+
     GLuint reconstructed() {
         return _reconstructed;
     }
+
+    char vertex_coeff_export_path[512] = { 0 };
 
 private:
     GLuint *_textures;

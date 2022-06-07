@@ -12,7 +12,7 @@ Window::~Window() {
 
 }
 
-Window::Window(int width, int height, std::string title) : width(width), height(height) {
+Window::Window(int width, int height, std::string title) : width(width), height(height), menu_bar_height(0.0f) {
     glfwInit();
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -34,16 +34,18 @@ Window::Window(int width, int height, std::string title) : width(width), height(
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
     io.IniFilename = nullptr;
-    io.FontGlobalScale = 2.5f;
+    io.FontGlobalScale = 2.0f;
+    // io.FontGlobalScale = 1.0f;
 
     // resource manager
     current_model = manager.end();;
     selected = manager.end();
     manager.shader("default shader", "shaders/default.vert", "shaders/default.frag");
     manager.camera("default camera");
+    manager.shader("SH reconstruction shader", "shaders/sh.vert", "shaders/sh.frag");
 
     // chrono
-    last_instant = glfwGetTime();
+    last_instant = (float) glfwGetTime();
     delta_time = 0.0f;
     cursor_state = glm::vec2(-1.0f, -1.0f);
 }
@@ -57,7 +59,7 @@ void Window::poll_event() {
 }
 
 void Window::render() {
-    float now = glfwGetTime();
+    float now = (float) glfwGetTime();
     delta_time = now - last_instant;
     last_instant = now;
 
@@ -131,6 +133,10 @@ void Window::render_using_shader(Resource res, ShaderPtr shader_ptr, CameraPtr c
 
     glUniform3f(shader["camPos"], camera->eye.x, camera->eye.y, camera->eye.z);
 
+    if (current_sh_sampler) {
+        glUniform3fv(shader["scene"], current_sh_sampler->coefficients().size(), &current_sh_sampler->coefficients()[0].x);
+    }
+
     std::visit(overloaded {
         [&](ModelPtr m) {
             m->bind();
@@ -190,8 +196,8 @@ void Window::update_camera() {
         double mouse_x, mouse_y;
         glfwGetCursorPos(window, &mouse_x, &mouse_y);
 
-        cam.yaw = (mouse_x - cursor_state.x) * cam.sensitivity;
-        cam.pitch = (cursor_state.y - mouse_y) * cam.sensitivity;
+        cam.yaw = ((float) mouse_x - cursor_state.x) * cam.sensitivity;
+        cam.pitch = (cursor_state.y - (float) mouse_y) * cam.sensitivity;
 
         if (cam.pitch + cam.base_pitch >= glm::pi<float>() / 2.0f - 0.001f) {
             cam.pitch = glm::pi<float>() / 2.0f - cam.base_pitch - 0.001f;
@@ -247,6 +253,8 @@ void Window::render_main_menu_bar() {
             }
             ImGui::EndMenu();
         }
+
+        menu_bar_height = ImGui::GetWindowHeight();
         ImGui::EndMainMenuBar();
     }
 }
@@ -280,7 +288,10 @@ void Window::render_file_dialog() {
 
 void Window::render_resources() {
     ImGui::SetNextWindowSize({ 500, 800 }, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos({ 0, 40 }, ImGuiCond_FirstUseEver);
+    if (menu_bar_height != 0.0f) {
+        ImGui::SetNextWindowPos({ 0, menu_bar_height }, ImGuiCond_FirstUseEver);
+    }
+    
     if (ImGui::Begin("Resources")) {
         if (ImGui::BeginListBox("##resources", { 500, 800 })) {
             for (ResourcePtr it = manager.begin(); it != manager.end(); it++) {
@@ -327,7 +338,9 @@ void Window::render_selected_properties() {
     }
 
     ImGui::SetNextWindowSize({ 800, 600 }, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos({ 0, 840 }, ImGuiCond_FirstUseEver);
+    if (menu_bar_height != 0.0f) {
+        ImGui::SetNextWindowPos({ 0, 800 + menu_bar_height }, ImGuiCond_FirstUseEver);
+    }
 
     if (ImGui::Begin("Properties")) {
         std::visit(overloaded {
@@ -347,7 +360,7 @@ void Window::render_selected_properties() {
                 ImGui::Text("REFLECTION");
                 ImGui::Text("OpenGL vertex array object: %u", m->vao);
                 ImGui::Text("OpenGL vertex buffer object: %u", m->vbo);
-                if (m->has_underlying_data) {
+                if (m->has_underlying_data()) {
                     ImGui::Text("Has underlying data: yes");
                 } else {
                     ImGui::Text("Has underlying data: no");
@@ -430,7 +443,7 @@ void Window::render_selected_properties() {
                 }
                 ImGui::Separator();
                 ImGui::Text("PROPERTIES");
-                int dist = std::distance(s->begin(), s->end());
+                int dist = (int) std::distance(s->begin(), s->end());
                 ImGui::Text("#objects: %d", dist);
 
                 glm::vec3 centroid = s->centroid();
@@ -465,7 +478,7 @@ void Window::render_selected_properties() {
                 glm::vec4 color = e->operator()(sample.x, sample.y);
                 ImGui::ColorEdit4("sample color", (float *) &color);
                 
-                float aspect = e->size().x / e->size().y;
+                float aspect = (float) e->size().x / e->size().y;
                 float w = ImGui::GetWindowWidth();
                 ImGui::Image((void *) e->texture, ImVec2(w, w / aspect));
             },
@@ -503,8 +516,28 @@ void Window::render_selected_properties() {
                 if (current_envmap && ImGui::Button("Calculate envlight coefficients")) {
                     s->calc_coefficients(*current_envmap);
                 }
+                if (current_model != manager.end()) {
+                    ImGui::InputText("coeff export path", s->vertex_coeff_export_path, sizeof(s->vertex_coeff_export_path));
+                    if (ImGui::Button("Calculate current model/scene coefficient")) {
+                        std::visit(overloaded {
+                            [&](ScenePtr sc) {
+                                s->evaluate_scene_coeffs(sc);
+                            },
+                            [&](ModelPtr model) {
+                                s->evaluate_model_coeffs(model);
+                            },
+                                [](auto rest) {
+                                throw "Unsupported variant";
+                            }
+                        }, current_model->second);
+                    }
+                }
+                
 
                 if (s->coefficients().size() > 0 && s->textures()) {
+                    if (current_sh_sampler != s && ImGui::Button("Define as current envmap coeffs")) {
+                        current_sh_sampler = s;
+                    }
                     if (ImGui::Button("Reconstruct")) {
                         s->reconstruct();
                     }
@@ -542,7 +575,9 @@ void Window::render_selected_properties() {
 
 void Window::render_opengl_status() {
     ImGui::SetNextWindowSize({ 500, 100 }, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos({ 500, 40 }, ImGuiCond_FirstUseEver);
+    if (menu_bar_height != 0.0f) {
+        ImGui::SetNextWindowPos({ 500, menu_bar_height }, ImGuiCond_FirstUseEver);
+    }
     if (ImGui::Begin("OpenGL status")) {
         GLuint error = glGetError();
         ImGui::Text("OpenGL error code: %u", error);

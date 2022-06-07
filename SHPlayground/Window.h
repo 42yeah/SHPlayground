@@ -57,12 +57,14 @@ private:
     ShaderPtr current_shader;
     CameraPtr current_camera;
     EnvMapPtr current_envmap;
+    SHSamplerPtr current_sh_sampler;
 
     ResourcePtr selected;
 
     // UI system
     std::string file_dialog_chosen_path;
     FileLoadType file_load_type;
+    float menu_bar_height;
 
     // chrono
     float last_instant;

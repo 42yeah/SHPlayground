@@ -133,5 +133,42 @@ namespace cuda {
         a[y * size.x + x] += b[y * size.x + x];
     }
 
+    __global__ void vertex_sh_project(glm::vec3* sh, Vertex vertex, glm::ivec2 sh_size, glm::vec3* result) {
+        int y = threadIdx.x;
+
+        for (int x = 0; x < sh_size.x; x++) {
+            glm::vec2 uv = glm::vec2((float) x, (float) y);
+
+            // 1. just put it to the center (we can't random)
+            uv += glm::vec2(0.5f, 0.5f);
+
+            // 2. normalize
+            uv /= sh_size;
+
+            // 3. project to spherical coordinate
+            float theta = 2.0f * acosf(sqrtf(1.0f - uv.y));
+            float phi = 2.0f * glm::pi<float>() * uv.x;
+
+            // 3.5 project to cartesian coordinate
+            glm::vec3 cartesian(sinf(theta) * cosf(phi), cosf(theta), -sinf(theta) * sinf(phi));
+
+            // 4. normalize... again
+            theta /= glm::pi<float>();
+            phi = phi / 2.0f / glm::pi<float>();
+
+            // 5. now sample spherical coords
+            glm::ivec2 sample_sh((int) (phi * sh_size.x), (int) (theta * sh_size.y));
+            
+            // 6. dot with the vertex normal & object color
+            glm::vec3 lambertian = glm::clamp(glm::dot(vertex.normal, cartesian) * glm::vec3(1.0f), 0.0f, 1.0f);
+            glm::vec3 shvalue = sh[sample_sh.y * sh_size.x + sample_sh.x];
+
+            // 7. project lambertian onto SH basis
+            result[y] += lambertian * shvalue;
+        }
+
+        result[y] /= sh_size.x;
+    }
+
 }
 

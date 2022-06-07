@@ -20,7 +20,6 @@ Model::Model(Vertex *vertices, int num_vertices) {
     glBindVertexArray(GL_NONE);
     valid = true;
     this->num_vertices = num_vertices;
-    has_underlying_data = false;
 
     centroid = glm::vec3(0.0f);
     for (int i = 0; i < num_vertices; i++) {
@@ -29,6 +28,10 @@ Model::Model(Vertex *vertices, int num_vertices) {
     }
 
     centroid /= num_vertices;
+
+    _has_underlying_data = true;
+    this->vertices.resize(num_vertices);
+    std::memcpy(&this->vertices[0], vertices, sizeof(Vertex) * num_vertices);
 }
 
 Model::~Model() {
@@ -37,7 +40,7 @@ Model::~Model() {
     }
     glDeleteBuffers(1, &vbo);
     glDeleteVertexArrays(1, &vao);
-    if (has_underlying_data) {
+    if (_has_underlying_data) {
         // do something related to that data
     }
 }
