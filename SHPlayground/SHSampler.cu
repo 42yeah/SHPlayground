@@ -3,6 +3,8 @@
 #include "CudaPtr.cuh"
 #include "algorithms.cuh"
 
+constexpr int num_vertex_batch = 1024;
+
 
 SHSampler::SHSampler(int num_bands) : _num_bands(num_bands), _size(0, 0), buffer(nullptr), _textures(nullptr), _reconstructed(0) {
 
@@ -180,42 +182,41 @@ void SHSampler::evaluate_model_coeffs(std::shared_ptr<Model> model) {
     if (!model->has_underlying_data() || !model->valid) {
         return;
     }
-    const std::vector<Vertex> &vertices = model->get_vertices();
+    std::vector<Vertex> &vertices = model->vertices;
+    CudaPtr<Vertex> vertices_cuda(&vertices[0], vertices.size());
 
     // perform SH projection
     std::vector<glm::vec3> vertices_coeffs;
     // _coefficients.size() for EACH vertex
     vertices_coeffs.resize(_coefficients.size() * vertices.size());
-    
-    std::vector<glm::vec3> result_vertical;
-    result_vertical.resize(_size.y);
 
     // for each SH function...
     for (int i = 0; i < _coefficients.size(); i++) {
 
         CudaPtr<glm::vec3> sh(buffer[i], _size.x * _size.y);
 
-        // for each vertex...
+        // allocate vertices * _size.y vec3s
+        std::vector<glm::vec3> results_vertical;
+        results_vertical.resize(vertices.size() * _size.y);
+        {
+            CudaPtr<glm::vec3> results_vertical_cuda(&results_vertical[0], vertices.size() * _size.y);
+
+            
+            // for each vertex...
+            int num_batches = vertices.size() / num_vertex_batch;
+            if (vertices.size() % num_vertex_batch != 0) {
+                num_batches += 1;
+            }
+
+            for (int j = 0; j < num_batches; j++) {
+                cuda::vertex_sh_project<<<num_vertex_batch, _size.y>>>(sh(), vertices_cuda(), _size, results_vertical_cuda(), vertices.size(), j * num_vertex_batch);
+            }
+        }
         for (int j = 0; j < vertices.size(); j++) {
-            // get the resulting vector...
             glm::vec3 &result = vertices_coeffs[j * _coefficients.size() + i];
-            result = glm::vec3(0.0f);
 
-            // zero out vertical results...
-            for (int k = 0; k < result_vertical.size(); k++) {
-                result_vertical[k] = glm::vec3(0.0f);
-            }
-
-            {
-                CudaPtr<glm::vec3> result_vertical_cuda(&result_vertical[0], _size.y);
-
-                // perform SH projection...
-                cuda::vertex_sh_project<<<1, _size.y>>>(sh(), vertices[j], _size, result_vertical_cuda());
-            }
-
-            // sum up the result...
-            for (int k = 0; k < result_vertical.size(); k++) {
-                result += result_vertical[k];
+            for (int k = 0; k < _size.y; k++) {
+                result += results_vertical[j * _size.y + k];
             }
             result /= _size.y;
             result *= 4.0f * glm::pi<float>();

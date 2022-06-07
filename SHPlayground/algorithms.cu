@@ -133,8 +133,17 @@ namespace cuda {
         a[y * size.x + x] += b[y * size.x + x];
     }
 
-    __global__ void vertex_sh_project(glm::vec3* sh, Vertex vertex, glm::ivec2 sh_size, glm::vec3* result) {
+    __global__ void vertex_sh_project(glm::vec3* sh, Vertex *vertices, glm::ivec2 sh_size, glm::vec3* result, int num_vertices, int block_offset) {
+        int i = blockIdx.x;
         int y = threadIdx.x;
+
+        int index = block_offset + i;
+        if (index >= num_vertices) {
+            return;
+        }
+
+        Vertex &vertex = vertices[index];
+        int result_offset = index * sh_size.y;
 
         for (int x = 0; x < sh_size.x; x++) {
             glm::vec2 uv = glm::vec2((float) x, (float) y);
@@ -158,16 +167,16 @@ namespace cuda {
 
             // 5. now sample spherical coords
             glm::ivec2 sample_sh((int) (phi * sh_size.x), (int) (theta * sh_size.y));
-            
+
             // 6. dot with the vertex normal & object color
             glm::vec3 lambertian = glm::clamp(glm::dot(vertex.normal, cartesian) * glm::vec3(1.0f), 0.0f, 1.0f);
             glm::vec3 shvalue = sh[sample_sh.y * sh_size.x + sample_sh.x];
 
             // 7. project lambertian onto SH basis
-            result[y] += lambertian * shvalue;
+            result[result_offset + y] += lambertian * shvalue;
         }
 
-        result[y] /= sh_size.x;
+        result[result_offset + y] /= sh_size.x;
     }
 
 }
