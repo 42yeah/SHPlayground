@@ -16,9 +16,15 @@ You can load .obj/COLLADA scenes into the application and visualize them. For a 
 - A selected shader
 - A camera
 
-You can evaluate and visualize envmap coefficient by using SH sampler.
+https://user-images.githubusercontent.com/4988733/173726051-91c4545b-4893-49a4-ba7d-45cad320912d.mp4
+
+You can evaluate and visualize envmap coefficient by using SH sampler. Don't forget to reconfigure after you change the SH texture size.
+
+https://user-images.githubusercontent.com/4988733/173726066-4fddcf8c-8927-4568-82c0-4aa239f4f153.mp4
 
 You can evaluate scene coefficient per-vertex and use SH reconstruction shader to visualize. Note that the shader I written only supports `l=4` expansion, which means 16 coefficients per-vertex (I have no idea how to pass more than that to shader.)
+
+https://user-images.githubusercontent.com/4988733/173726137-6ffccafd-109c-4349-9676-8f29f3acad96.mp4
 
 ## Dependencies
 
