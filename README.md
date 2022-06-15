@@ -8,6 +8,8 @@ Interreflection is also theoretically doable, however I have not implemented BVH
 
 ## Usage
 
+If you are just going to try it out and you are also using Windows with CUDA in path, you can download the executable [here](https://github.com/42yeah/SHPlayground/releases/).
+
 You can load .obj/COLLADA scenes into the application and visualize them. For a scene to visualize, you will need:
 
 - A selected model
