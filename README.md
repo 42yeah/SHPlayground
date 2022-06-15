@@ -12,7 +12,7 @@ If you are just going to try it out and you are also using Windows with CUDA in 
 
 You can load .obj/COLLADA scenes into the application and visualize them. For a scene to visualize, you will need:
 
-- A selected model
+- A selected model/scene
 - A selected shader
 - A camera
 
@@ -22,7 +22,17 @@ You can evaluate and visualize envmap coefficient by using SH sampler. Don't for
 
 https://user-images.githubusercontent.com/4988733/173726066-4fddcf8c-8927-4568-82c0-4aa239f4f153.mp4
 
-You can evaluate scene coefficient per-vertex and use SH reconstruction shader to visualize. Note that the shader I written only supports `l=4` expansion, which means 16 coefficients per-vertex (I have no idea how to pass more than that to shader.)
+You can evaluate scene coefficient per-vertex and use SH reconstruction shader to visualize. Note that the shader I written only supports `l=4` expansion, which means 16 coefficients per-vertex (I have no idea how to pass more than that to shader.) For the SH reconstruction shader to work, you will need:
+
+- A selected model/scene
+- A selected envmap
+- SH reconstruction shader selected
+- A selected SH sampler (`define as current envmap coeffs`)
+    - envmap coefficient evaluated (16 color bars below aren't just gray)
+    - Model/scene coefficient evaluated (`Calculate current model/scene coefficient`)
+- A camera
+
+For the SH sampler to work, you will first need to press `Reconfigure`, then `Calculate SH`. Only then can you evaluate other stuffs, such as envmap coefficent and per-vertex coefficient.
 
 https://user-images.githubusercontent.com/4988733/173726137-6ffccafd-109c-4349-9676-8f29f3acad96.mp4
 
