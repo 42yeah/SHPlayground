@@ -2,7 +2,7 @@
 
 ![Screenshot](screenshots/screenshot.jpg)
 
-An application which (partially) implements [Sloan 2002](https://jankautz.com/publications/prtSIG02.pdf) with CUDA acceleration. Radiance self-transfer without interreflection.
+An application which (partially) implements [\[Sloan 2002\]](https://jankautz.com/publications/prtSIG02.pdf) with CUDA acceleration. Radiance self-transfer without interreflection.
 
 Interreflection is also theoretically doable, however I have not implemented BVH and that is extremely slow and janky, so I decided to simply remove it. 
 
