@@ -161,6 +161,8 @@ void SHSampler::reconstruct() {
     std::cout << cudaGetErrorString(err) << std::endl;
 
     delete[] texture;
+
+    visualize();
 }
 
 void SHSampler::evaluate_scene_coeffs(std::shared_ptr<Scene> scene) {
@@ -201,7 +203,6 @@ void SHSampler::evaluate_model_coeffs(std::shared_ptr<Model> model) {
         {
             CudaPtr<glm::vec3> results_vertical_cuda(&results_vertical[0], vertices.size() * _size.y);
 
-            
             // for each vertex...
             int num_batches = vertices.size() / num_vertex_batch;
             if (vertices.size() % num_vertex_batch != 0) {
@@ -209,7 +210,7 @@ void SHSampler::evaluate_model_coeffs(std::shared_ptr<Model> model) {
             }
 
             for (int j = 0; j < num_batches; j++) {
-                cuda::vertex_sh_project<<<num_vertex_batch, _size.y>>>(sh(), vertices_cuda(), _size, results_vertical_cuda(), vertices.size(), j * num_vertex_batch);
+                cuda::vertex_sh_project_unshadowed<<<num_vertex_batch, _size.y>>>(sh(), vertices_cuda(), _size, results_vertical_cuda(), vertices.size(), j * num_vertex_batch);
             }
         }
         for (int j = 0; j < vertices.size(); j++) {
@@ -249,29 +250,17 @@ void SHSampler::evaluate_model_coeffs(std::shared_ptr<Model> model) {
     }
 
     glGenVertexArrays(1, &model->vao);
-    std::cout << glGetError() << std::endl;
     glGenBuffers(1, &model->vbo);
-    std::cout << glGetError() << std::endl;
     glBindVertexArray(model->vao);
-    std::cout << glGetError() << std::endl;
     glBindBuffer(GL_ARRAY_BUFFER, model->vbo);
-    std::cout << glGetError() << std::endl;
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertex_data.size(), &vertex_data[0], GL_STATIC_DRAW);
-    std::cout << glGetError() << std::endl;
     glEnableVertexAttribArray(0);
-    std::cout << glGetError() << std::endl;
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), nullptr);
-    std::cout << glGetError() << std::endl;
     glEnableVertexAttribArray(1);
-    std::cout << glGetError() << std::endl;
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), (void *) (sizeof(float) * 3));
-    std::cout << glGetError() << std::endl;
     glEnableVertexAttribArray(2);
-    std::cout << glGetError() << std::endl;
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), (void *) (sizeof(float) * 6));
-    std::cout << glGetError() << std::endl;
     glEnableVertexAttribArray(3);
-    std::cout << glGetError() << std::endl;
     glVertexAttribPointer(3, n / 4, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), (void *) (sizeof(float) * 8));
     glEnableVertexAttribArray(4);
     glVertexAttribPointer(4, n / 4, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), (void *) (sizeof(float) * 12));
@@ -280,9 +269,7 @@ void SHSampler::evaluate_model_coeffs(std::shared_ptr<Model> model) {
     glEnableVertexAttribArray(6);
     glVertexAttribPointer(6, n / 4, GL_FLOAT, GL_FALSE, sizeof(float) * (offset + n), (void *) (sizeof(float) * 20));
 
-    std::cout << glGetError() << std::endl;
     glBindVertexArray(GL_NONE);
-    std::cout << glGetError() << std::endl;
 
     if (std::strlen(vertex_coeff_export_path) > 0) {
         std::ofstream writer(vertex_coeff_export_path);

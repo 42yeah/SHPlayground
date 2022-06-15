@@ -5,3 +5,8 @@ x64/Debug/*.pdb
 x64/Debug/*.exp
 x64/Debug/*.dll
 SHPlayground/x64
+x64/Release/*.exe
+x64/Release/*.lib
+x64/Release/*.pdb
+x64/Release/*.exp
+x64/Release/*.dll

@@ -8,7 +8,7 @@
 
 Scene::Scene(ResourceManager &man, std::string scene_path) {
     Assimp::Importer importer;
-    const aiScene *scene = importer.ReadFile(scene_path, aiProcess_GenNormals);
+    const aiScene *scene = importer.ReadFile(scene_path, aiProcess_GenNormals | aiProcess_Triangulate);
 
     if (!scene) {
         std::cerr << "ERROR! Cannot load scene: " << scene_path << std::endl;

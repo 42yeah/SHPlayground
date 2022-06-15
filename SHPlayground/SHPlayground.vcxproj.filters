@@ -104,6 +104,9 @@
     <ClInclude Include="Vertex.h">
       <Filter>源文件\resources</Filter>
     </ClInclude>
+    <ClInclude Include="Triangle.cuh">
+      <Filter>源文件\resources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="CudaPtr.cuh">

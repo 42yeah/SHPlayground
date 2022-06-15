@@ -2,6 +2,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <random>
 #include <glm/gtc/random.hpp>
+#include "Triangle.cuh"
 
 using namespace cuda;
 
@@ -133,7 +134,7 @@ namespace cuda {
         a[y * size.x + x] += b[y * size.x + x];
     }
 
-    __global__ void vertex_sh_project(glm::vec3* sh, Vertex *vertices, glm::ivec2 sh_size, glm::vec3* result, int num_vertices, int block_offset) {
+    __global__ void vertex_sh_project_unshadowed(glm::vec3* sh, Vertex *vertices, glm::ivec2 sh_size, glm::vec3* result, int num_vertices, int block_offset) {
         int i = blockIdx.x;
         int y = threadIdx.x;
 
@@ -178,6 +179,7 @@ namespace cuda {
 
         result[result_offset + y] /= sh_size.x;
     }
+
 
 }
 

@@ -219,7 +219,7 @@ void Window::render_main_menu_bar() {
             if (ImGui::MenuItem("Open")) {
                 // TODO: stop using Scotty3D's stuffs
                 file_load_type = FileLoadType::Model;
-                ImGuiFileDialog::Instance()->OpenDialog("choose", "Choose .obj file", ".dae,.obj", "F:\\code\\Scotty3D\\media\\");
+                ImGuiFileDialog::Instance()->OpenDialog("choose", "Choose .obj file", ".dae,.obj", "models/");
             }
             
             ImGui::EndMenu();
@@ -227,7 +227,7 @@ void Window::render_main_menu_bar() {
         if (ImGui::BeginMenu("Edit")) {
             if (ImGui::MenuItem("Load EnvMap")) {
                 file_load_type = FileLoadType::EnvMap;
-                ImGuiFileDialog::Instance()->OpenDialog("choose", "Choose .exr file", ".exr", "F:\\academia\\exr\\");
+                ImGuiFileDialog::Instance()->OpenDialog("choose", "Choose .exr file", ".exr", "exr/");
             }
             if (ImGui::MenuItem("Create SH sample")) {
                 // I am too lazy; just create one
